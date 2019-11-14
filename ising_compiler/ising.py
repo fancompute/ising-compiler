@@ -81,6 +81,32 @@ class IsingModel:
 
         return e
 
+    def get_energy_at_site_2d(self, i, j):
+        """
+        Compute the energy at a given site in the lattice. Special optimized version for 2D case
+        """
+
+        if 1 <= i < self.size[0] - 1 and 1 <= j < self.size[1] - 1:
+            return self.spins[i, j] * (
+                    self.spins[i + 1, j] * self.couplings[0, i, j] +
+                    self.spins[i - 1, j] * self.couplings[0, i - 1, j] +
+                    self.spins[i, j + 1] * self.couplings[1, i, j] +
+                    self.spins[i, j - 1] * self.couplings[1, i, j - 1] +
+                    self.fields[i, j]
+            )
+
+        else:
+            e = self.spins[i, j] * self.fields[i, j]
+            if i < self.size[0] - 1:
+                e += self.spins[i, j] * self.spins[i + 1, j] * self.couplings[0, i, j]
+            if i >= 1:
+                e += self.spins[i, j] * self.spins[i - 1, j] * self.couplings[0, i - 1, j]
+            if j < self.size[1] - 1:
+                e += self.spins[i, j] * self.spins[i, j + 1] * self.couplings[1, i, j]
+            if j >= 1:
+                e += self.spins[i, j] * self.spins[i, j - 1] * self.couplings[1, i, j - 1]
+            return e
+
     def get_total_energy(self):
         """
         Gets the total internal energy of the lattice system, not normalized by number of spins
@@ -102,9 +128,12 @@ class IsingModel:
             for epoch in tqdm(range(epochs)):
                 # Randomly select a site on the lattice
                 pos = self.get_random_index()
+                # i, j = [np.random.randint(0, dim) for dim in self.size]
 
                 # Calculate energy of the spin and energy if it is flipped
                 energy = self.get_energy_at_site(pos)
+                # energy = self.get_energy_at_site_2d(i, j)
+
                 energy_flipped = -1 * energy
 
                 # Flip the spin if it is energetically favorable. If not, flip based on Boltzmann factor
@@ -125,5 +154,5 @@ class IsingModel:
 
 
 if __name__ == "__main__":
-    lattice = IsingModel((5, 5))
+    lattice = IsingModel((100, 100))
     lattice.run(1000000)
