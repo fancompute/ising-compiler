@@ -135,12 +135,12 @@ class IsingModel:
         elif np.exp(-energy_flipped / self.temperature) > np.random.rand():
             self.spins[i, j] *= -1
 
-    def run(self, epochs, video = True, num_frames = 100, show_progress = True):
+    def run(self, epochs, video = False, show_progress = False):
 
         iterator = tqdm(range(epochs)) if show_progress else range(epochs)
 
         if video:
-
+            num_frames = 100
             FFMpegWriter = anim.writers['ffmpeg']
             writer = FFMpegWriter(fps = 10)
 
@@ -165,4 +165,4 @@ class IsingModel:
 
 if __name__ == "__main__":
     lattice = IsingModel((100, 100))
-    lattice.run(1000000)
+    lattice.run(1000000, video = True, show_progress = True)
