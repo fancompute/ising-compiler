@@ -105,12 +105,12 @@ class IsingCircuitGraph(IsingGraph):
     def NAND(self, in1, in2, out):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
-        # H = 1/2 s1 + 1/2 s2 + s3 + 1/2 s1 s2 + 1/2 s1 s3 + s2 s3
-        self.set_field(s1, 1 / 2)
-        self.set_field(s2, 1 / 2)
-        self.set_field(s3, 1)
+        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + 1/2 s1 s3 + s2 s3
+        self.set_field(s1, -1 / 2)
+        self.set_field(s2, -1 / 2)
+        self.set_field(s3, -1)
         self.set_coupling(s1, s2, 1 / 2)
-        self.set_coupling(s1, s3, 1 / 2)
+        self.set_coupling(s1, s3, 1)
         self.set_coupling(s2, s3, 1)
         return s3
 
