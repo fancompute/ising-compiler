@@ -7,24 +7,25 @@ from tqdm import tqdm
 
 class IsingGraph:
 
-    def __init__(self, graph, temperature = 0.5, initializer = 'random', coupling_strength = 1.0):
+    def __init__(self, graph: nx.Graph, temperature = 0.5, initializer = 'random', coupling_strength = 1.0):
 
         assert type(graph) is nx.Graph
 
-        if nx.get_node_attributes(graph, 'spin') == {} and nx.get_node_attributes(graph, 'field') == {} and \
-                nx.get_edge_attributes(graph, 'coupling') == {}:
-            # Initialize the spin, fields, and coupling on the graph
-            self.graph = IsingGraph.initialize_graph(graph, coupling_strength = coupling_strength)
-        else:
-            # Assume the graph is properly initialized
-            self.graph = graph
+        self.graph = graph
+        # Initialize graph attributes
+        if nx.get_node_attributes(graph, 'spin') == {}:
+            self.graph = IsingGraph.initialize_spins(self.graph, initializer = initializer)
+        if nx.get_node_attributes(graph, 'field') == {}:
+            self.graph = IsingGraph.initialize_fields(self.graph, field_strength = 0.0)
+        if nx.get_edge_attributes(graph, 'coupling') == {}:
+            self.graph = IsingGraph.initialize_couplings(self.graph, coupling_strength = coupling_strength)
 
         self.temperature = temperature
         self.initializer = initializer
 
     @staticmethod
-    def initialize_graph(graph, initializer = 'random', field_strength = 0.0, coupling_strength = 1.0):
-        '''Takes an undirected graph and stores spin information on the nodes and coupling on the edges'''
+    def initialize_spins(graph, initializer = 'random'):
+        '''Takes an undirected graph and stores spin information on the nodes'''
         for node in graph.nodes:
             if initializer == 'random':
                 graph.nodes[node]['spin'] = 1 if np.random.rand() > .5 else -1
@@ -35,7 +36,19 @@ class IsingGraph:
             else:
                 raise ValueError()
 
+        return graph
+
+    @staticmethod
+    def initialize_fields(graph, field_strength = 0.0):
+        '''Takes an undirected graph and stores field information on the nodes '''
+        for node in graph.nodes:
             graph.nodes[node]['field'] = field_strength
+
+        return graph
+
+    @staticmethod
+    def initialize_couplings(graph, coupling_strength = 1.0):
+        '''Takes an undirected graph and stores coupling on the edges'''
 
         for edge in graph.edges:
             graph.edges[edge]['coupling'] = -1 * coupling_strength
@@ -43,12 +56,12 @@ class IsingGraph:
         return graph
 
     @staticmethod
-    def visualize_graph(graph, pos = None):
+    def visualize_graph(graph, pos = None, with_labels=True):
         node_colors = list(nx.get_node_attributes(graph, 'spin').values())
         edge_colors = list(nx.get_edge_attributes(graph, 'coupling').values())
         pos = nx.nx_pydot.graphviz_layout(graph) if pos is not None else pos
         node_size = 300 * np.sqrt(25 / graph.number_of_nodes())
-        nx.drawing.draw(graph, pos, node_color = node_colors, edge_color = edge_colors,
+        nx.drawing.draw(graph, pos, node_color = node_colors, edge_color = edge_colors, with_labels = with_labels,
                         node_size = node_size, vmax = 1.0, vmin = -1.0)
 
     def get_energy_at_site(self, node):
@@ -90,9 +103,13 @@ class IsingGraph:
         elif np.exp(-energy_flipped / self.temperature) > np.random.rand():
             self.graph.nodes[node]['spin'] *= -1
 
-    def run(self, epochs, video = False, show_progress = False):
+    def run_metropolis(self, epochs, anneal_temperature_range = None, video = False, show_progress = False):
 
         iterator = tqdm(range(epochs)) if show_progress else range(epochs)
+        if anneal_temperature_range:
+            temperatures = np.linspace(anneal_temperature_range[0], anneal_temperature_range[1], epochs)
+        else:
+            temperatures = [self.temperature] * epochs
 
         if video:
             num_frames = 100
@@ -105,6 +122,7 @@ class IsingGraph:
             with writer.saving(fig, "ising.mp4", 100):
                 pos = nx.nx_pydot.graphviz_layout(self.graph)
                 for epoch in iterator:
+                    self.temperature = temperatures[epoch]
                     self.metropolis_step()
                     if epoch % (epochs // num_frames) == 0:
                         IsingGraph.visualize_graph(self.graph, pos = pos)
@@ -115,10 +133,11 @@ class IsingGraph:
 
         else:
             for epoch in iterator:
+                self.temperature = temperatures[epoch]
                 self.metropolis_step()
 
 
 if __name__ == "__main__":
     graph = nx.convert_node_labels_to_integers(nx.generators.grid_2d_graph(20, 20))
     lattice = IsingGraph(graph)
-    lattice.run(10000, video = True, show_progress = True)
+    lattice.run_metropolis(10000, video = True, show_progress = True)

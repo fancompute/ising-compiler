@@ -2,7 +2,7 @@ from ising_compiler.ising_numpy import IsingModel
 from ising_compiler.utils import *
 
 
-class IsingGate:
+class IsingLatticeGate:
     # footprint = ()
     num_inputs = 0
     num_outputs = 0
@@ -21,7 +21,7 @@ class IsingGate:
         raise NotImplementedError
 
 
-class WIRE(IsingGate):
+class WIRE(IsingLatticeGate):
 
     # footprint = (2,1)
     num_inputs = 1
@@ -35,7 +35,7 @@ class WIRE(IsingGate):
     def evaluate(self, inputs):
         return inputs
 
-class NAND(IsingGate):
+class NAND(IsingLatticeGate):
 
     num_inputs = 2
     num_outputs = 1

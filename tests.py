@@ -29,7 +29,7 @@ class GateTests(unittest.TestCase):
             self._test_gate(gate, test)
 
     def _test_gate(self, gate_cls, test_fn, num_trials=100):
-        all_input_combos = [[int(x) for x in ('{:0' + str(gate_cls.num_inputs) + 'b}').format(1)]
+        all_input_combos = [[int(x) for x in ('{:0' + str(gate_cls.num_inputs) + 'b}').format(n)]
                             for n in range(2 ** gate_cls.num_inputs)]
 
         for _ in tqdm(range(100), desc = "Testing {}".format(gate_cls.__name__)):
