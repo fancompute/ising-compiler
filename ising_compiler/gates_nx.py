@@ -102,13 +102,49 @@ class IsingCircuitGraph(IsingGraph):
     def WIRE(self, spin1, spin2):
         self.set_coupling(spin1, spin2, self.wire_coupling)
 
+    def AND(self, in1, in2, out):
+        s1, s2 = self.copy_inputs(in1, in2)
+        s3 = self.add_spin(out)
+        # H = -1/2 s1 + -1/2 s2 + s3 + 1/2 s1 s2 + -s1 s3 + -s2 s3
+        self.set_field(s1, -1 / 2)
+        self.set_field(s2, -1 / 2)
+        self.set_field(s3, 1)
+        self.set_coupling(s1, s2, 1 / 2)
+        self.set_coupling(s1, s3, -1)
+        self.set_coupling(s2, s3, -1)
+        return s3
+
     def NAND(self, in1, in2, out):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
-        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + 1/2 s1 s3 + s2 s3
+        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
         self.set_field(s1, -1 / 2)
         self.set_field(s2, -1 / 2)
         self.set_field(s3, -1)
+        self.set_coupling(s1, s2, 1 / 2)
+        self.set_coupling(s1, s3, 1)
+        self.set_coupling(s2, s3, 1)
+        return s3
+
+    def OR(self, in1, in2, out):
+        s1, s2 = self.copy_inputs(in1, in2)
+        s3 = self.add_spin(out)
+        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
+        self.set_field(s1, -1 / 2)
+        self.set_field(s2, -1 / 2)
+        self.set_field(s3, -1)
+        self.set_coupling(s1, s2, -1 / 2)
+        self.set_coupling(s1, s3, -1)
+        self.set_coupling(s2, s3, -1)
+        return s3
+
+    def NOR(self, in1, in2, out):
+        s1, s2 = self.copy_inputs(in1, in2)
+        s3 = self.add_spin(out)
+        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
+        self.set_field(s1, 1 / 2)
+        self.set_field(s2, 1 / 2)
+        self.set_field(s3, 1)
         self.set_coupling(s1, s2, 1 / 2)
         self.set_coupling(s1, s3, 1)
         self.set_coupling(s2, s3, 1)
@@ -130,6 +166,25 @@ class IsingCircuitGraph(IsingGraph):
         self.set_coupling(s1, so, 1 / 2)
         self.set_coupling(s2, so, 1 / 2)
         self.set_coupling(sA, so, 1)
+
+        return so
+
+    def XNOR(self, in1, in2, out):
+        s1, s2 = self.copy_inputs(in1, in2)
+        so = self.add_spin(out)
+        ancilla = str(len(self.graph.nodes))
+        sA = self.add_spin(ancilla)
+        # H = 1/2 s1 + 1/2 s2 + 1 sA + 1/2 so + 1/2 s1 s2 + s1 sA + s2 sA + 1/2 s1 so + 1/2 s2 so + sA so
+        self.set_field(s1, 1 / 2)
+        self.set_field(s2, 1 / 2)
+        self.set_field(sA, 1)
+        self.set_field(so, -1 / 2)
+        self.set_coupling(s1, s2, 1 / 2)
+        self.set_coupling(s1, sA, 1)
+        self.set_coupling(s2, sA, 1)
+        self.set_coupling(s1, so, -1 / 2)
+        self.set_coupling(s2, so, -1 / 2)
+        self.set_coupling(sA, so, -1)
 
         return so
 
