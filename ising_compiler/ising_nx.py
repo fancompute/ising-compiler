@@ -62,7 +62,7 @@ class IsingGraph:
         pos = nx.nx_pydot.graphviz_layout(graph) if pos is not None else pos
         node_size = 300 * np.sqrt(25 / graph.number_of_nodes())
         nx.drawing.draw(graph, pos, node_color = node_colors, edge_color = edge_colors, with_labels = with_labels,
-                        node_size = node_size, vmax = 1.0, vmin = -1.0)
+                        node_size = node_size, vmax = 1.0, vmin = -1.0, cmap = 'coolwarm')
 
     def get_energy_at_site(self, node):
         """
@@ -107,7 +107,7 @@ class IsingGraph:
 
         iterator = tqdm(range(epochs)) if show_progress else range(epochs)
         if anneal_temperature_range:
-            temperatures = np.linspace(anneal_temperature_range[0], anneal_temperature_range[1], epochs)
+            temperatures = np.geomspace(anneal_temperature_range[0], anneal_temperature_range[1], epochs)
         else:
             temperatures = [self.temperature] * epochs
 

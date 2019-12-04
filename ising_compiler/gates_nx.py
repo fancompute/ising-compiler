@@ -6,7 +6,7 @@ from ising_compiler.utils import *
 
 
 class IsingCircuitGraph(IsingGraph):
-    wire_coupling = -3.0
+    wire_coupling = -1
     input_field_strength = 10.0
 
     '''
@@ -30,7 +30,9 @@ class IsingCircuitGraph(IsingGraph):
         else:
             raise ValueError()
 
-    def add_spin(self, node, field_strength = 0.0):
+    def add_spin(self, node = None, field_strength = 0.0):
+        if node is None:
+            node = str(len(self.graph.nodes))
         assert not self.graph.has_node(node), f"Node {node} already in graph {self.graph}"
         self.graph.add_node(node)
         # Initialize spin of new node
@@ -47,7 +49,10 @@ class IsingCircuitGraph(IsingGraph):
         input_copies = []
         for node in nodes:
             assert self.graph.has_node(node), f"Input node {node} missing in graph {self.graph}"
-            node_copy = self.add_spin(node + "'")
+            i=1
+            while self.graph.has_node(node + str(i)): i+=1
+            node_copy = self.add_spin(node + str(i))
+            # node_copy = self.add_spin()
             input_copies.append(node_copy)
             self.WIRE(node, node_copy)
         return input_copies
@@ -105,7 +110,7 @@ class IsingCircuitGraph(IsingGraph):
     def NOT(self, spin1, spin2):
         self.set_coupling(spin1, spin2, -self.wire_coupling)
 
-    def AND(self, in1, in2, out):
+    def AND(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
         # H = -1/2 s1 + -1/2 s2 + s3 + 1/2 s1 s2 + -s1 s3 + -s2 s3
@@ -117,7 +122,7 @@ class IsingCircuitGraph(IsingGraph):
         self.set_coupling(s2, s3, -1)
         return s3
 
-    def NAND(self, in1, in2, out):
+    def NAND(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
         # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
@@ -129,19 +134,29 @@ class IsingCircuitGraph(IsingGraph):
         self.set_coupling(s2, s3, 1)
         return s3
 
-    def OR(self, in1, in2, out):
+    def OR(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
         # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
-        self.set_field(s1, -1 / 2)
-        self.set_field(s2, -1 / 2)
+        self.set_field(s1, 1 / 2)
+        self.set_field(s2, 1 / 2)
         self.set_field(s3, -1)
-        self.set_coupling(s1, s2, -1 / 2)
+        self.set_coupling(s1, s2, 1 / 2)
         self.set_coupling(s1, s3, -1)
         self.set_coupling(s2, s3, -1)
         return s3
+        # s1, s2 = self.copy_inputs(in1, in2)
+        # s3 = self.add_spin(out)
+        # # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
+        # self.set_field(s1, -1 / 2)
+        # self.set_field(s2, -1 / 2)
+        # self.set_field(s3, -1)
+        # self.set_coupling(s1, s2, -1 / 2)
+        # self.set_coupling(s1, s3, -1)
+        # self.set_coupling(s2, s3, -1)
+        # return s3
 
-    def NOR(self, in1, in2, out):
+    def NOR(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
         # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
@@ -153,11 +168,10 @@ class IsingCircuitGraph(IsingGraph):
         self.set_coupling(s2, s3, 1)
         return s3
 
-    def XOR(self, in1, in2, out):
+    def XOR(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         so = self.add_spin(out)
-        ancilla = str(len(self.graph.nodes))
-        sA = self.add_spin(ancilla)
+        sA = self.add_spin()
         # H = 1/2 s1 + 1/2 s2 + 1 sA + 1/2 so + 1/2 s1 s2 + s1 sA + s2 sA + 1/2 s1 so + 1/2 s2 so + sA so
         self.set_field(s1, 1 / 2)
         self.set_field(s2, 1 / 2)
@@ -172,11 +186,10 @@ class IsingCircuitGraph(IsingGraph):
 
         return so
 
-    def XNOR(self, in1, in2, out):
+    def XNOR(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         so = self.add_spin(out)
-        ancilla = str(len(self.graph.nodes))
-        sA = self.add_spin(ancilla)
+        sA = self.add_spin()
         # H = 1/2 s1 + 1/2 s2 + 1 sA + 1/2 so + 1/2 s1 s2 + s1 sA + s2 sA + 1/2 s1 so + 1/2 s2 so + sA so
         self.set_field(s1, 1 / 2)
         self.set_field(s2, 1 / 2)
