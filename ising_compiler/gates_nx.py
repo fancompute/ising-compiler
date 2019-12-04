@@ -102,6 +102,9 @@ class IsingCircuitGraph(IsingGraph):
     def WIRE(self, spin1, spin2):
         self.set_coupling(spin1, spin2, self.wire_coupling)
 
+    def NOT(self, spin1, spin2):
+        self.set_coupling(spin1, spin2, -self.wire_coupling)
+
     def AND(self, in1, in2, out):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
