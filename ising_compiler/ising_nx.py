@@ -64,25 +64,45 @@ class IsingGraph:
             fig = plt.figure(figsize = (15, 10))
             ax = fig.add_subplot(1, 1, 1)
 
+        if pos is None:
+            pos = nx.nx_pydot.graphviz_layout(graph)
+
         node_colors = list(nx.get_node_attributes(graph, 'spin').values())
-        node_sizes = list(nx.get_node_attributes(graph, 'field').values())
         edge_colors = list(nx.get_edge_attributes(graph, 'coupling').values())
-        pos = nx.nx_pydot.graphviz_layout(graph) if pos is None else pos
-        node_size = 800 * np.sqrt(25 / graph.number_of_nodes())
+
+        node_size = 4000 * np.sqrt(1 / graph.number_of_nodes())
+
+        node_fields = list(nx.get_node_attributes(graph, 'field').values())
+        field_sizes = node_size * (1 + 2 * np.sqrt(np.abs(node_fields)))
+
+        print(node_fields)
 
         # color axis
         cmap = plt.get_cmap('PiYG')
+        cmap_fields = plt.get_cmap('bwr')
+
         divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size = '2%', pad = '2%')
-        mpl.colorbar.ColorbarBase(cax, cmap = cmap,
+        cax1 = divider.append_axes('right', size = '2%', pad = '2%')
+        mpl.colorbar.ColorbarBase(cax1, cmap = cmap,
                                   norm = mpl.colors.Normalize(-1, 1),
                                   ticks = [-1, +1])
+        cax1.set_ylabel('Spin', rotation = 270, labelpad = -5, fontsize = 14)
+
+        cax2 = divider.append_axes('left', size = '2%', pad = '2%')
+        mpl.colorbar.ColorbarBase(cax2, cmap = cmap_fields,
+                                  norm = mpl.colors.Normalize(-1, 1),
+                                  ticks = [-1, +1])
+        cax2.set_ylabel('Field strength, coupling', rotation = 270, labelpad = -5, fontsize = 14)
 
         node_labels = {n: n for n in graph.nodes() if not n.isdigit()}
 
+        nx.draw_networkx_nodes(graph, pos, ax = ax, node_color = node_fields, vmax = 1.0, vmin = -1.0,
+                               cmap = cmap_fields, node_size = field_sizes, alpha = .25)
+
         nx.drawing.draw(graph, pos, ax = ax, node_color = node_colors, edge_color = edge_colors,
                         node_size = node_size, vmax = 1.0, vmin = -1.0, width = 4,
-                        cmap = cmap, edge_cmap = cmap, labels = node_labels, font_size = 14, font_color = "white")
+                        cmap = cmap, edge_cmap = cmap_fields, labels = node_labels, font_size = 14,
+                        font_color = "white")
 
     def get_energy_at_site(self, node):
         """
@@ -147,8 +167,8 @@ class IsingGraph:
                     title = str(epoch).zfill(5)
                     plt.savefig(f"frames/{title}.png", dpi = 144)
                     plt.close()
-                        # writer.grab_frame()
-                        # plt.clf()
+                    # writer.grab_frame()
+                    # plt.clf()
 
             plt.close('all')
 

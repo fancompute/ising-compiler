@@ -10,7 +10,7 @@ from ising_compiler.utils import *
 
 class IsingCircuitGraph(IsingGraph):
     wire_coupling = -1
-    input_field_strength = 10.0
+    input_field_strength = 5
 
     '''
     Class representing a graph which is sequentially built to emulate a Boolean circuit. Includes methods for adding
