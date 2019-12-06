@@ -1,3 +1,6 @@
+from collections import Counter
+from json import dumps
+
 import networkx as nx
 from tqdm import tqdm
 
@@ -49,10 +52,10 @@ class IsingCircuitGraph(IsingGraph):
         input_copies = []
         for node in nodes:
             assert self.graph.has_node(node), f"Input node {node} missing in graph {self.graph}"
-            i=1
-            while self.graph.has_node(node + str(i)): i+=1
-            node_copy = self.add_spin(node + str(i))
-            # node_copy = self.add_spin()
+            i = 1
+            while self.graph.has_node(node + str(i)): i += 1
+            # node_copy = self.add_spin(node + str(i))
+            node_copy = self.add_spin()
             input_copies.append(node_copy)
             self.WIRE(node, node_copy)
         return input_copies
@@ -208,14 +211,16 @@ class IsingCircuitGraph(IsingGraph):
                        epochs = 10000,
                        anneal_temperature_range = None,
                        show_progress = False,
-                       mode = 'bool'):
+                       mode = 'binary',
+                       video = False):
         '''Evaluates the circuit one time for a given input'''
         # re-initialize all spins
         IsingGraph.initialize_spins(self.graph)
         # set the input fields to the input of the circuit
         self.set_input_fields(input_dict, mode = mode)
         # run metropolis / annealing
-        self.run_metropolis(epochs, anneal_temperature_range = anneal_temperature_range, show_progress = show_progress)
+        self.run_metropolis(epochs, anneal_temperature_range = anneal_temperature_range, show_progress = show_progress,
+                            video = video)
         # build a return dictionary of output spins
         output_dict = {}
         for output in self.outputs:
@@ -243,6 +248,24 @@ class IsingCircuitGraph(IsingGraph):
         for key in output_dicts[0].keys():
             mean_dict[key] = sum(d[key] for d in output_dicts) / len(output_dicts)
         return mean_dict
+
+    def evaluate_outcomes(self, input_dict,
+                          runs = 1000,
+                          epochs_per_run = 1000,
+                          anneal_temperature_range = None,
+                          show_progress = True):
+        '''Evaluates an input many times and returns a Counter() of stringified dicts and frequenices'''
+        output_dicts = []
+        iterator = tqdm(range(runs)) if show_progress else range(runs)
+        for _ in iterator:
+            output_dict = self.evaluate_input(input_dict,
+                                              epochs = epochs_per_run,
+                                              anneal_temperature_range = anneal_temperature_range,
+                                              mode = 'binary',
+                                              show_progress = False)
+            output_dicts.append(output_dict)
+
+        return Counter([dumps(d) for d in output_dicts])
 
     def evaluate_circuit(self,
                          runs = 1000,

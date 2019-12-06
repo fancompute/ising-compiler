@@ -1,7 +1,9 @@
+import matplotlib as mpl
 import matplotlib.animation as anim
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tqdm import tqdm
 
 
@@ -56,13 +58,31 @@ class IsingGraph:
         return graph
 
     @staticmethod
-    def visualize_graph(graph, pos = None, with_labels=True):
+    def visualize_graph(graph, pos = None, fig = None, ax = None):
+
+        if fig is None or ax is None:
+            fig = plt.figure(figsize = (15, 10))
+            ax = fig.add_subplot(1, 1, 1)
+
         node_colors = list(nx.get_node_attributes(graph, 'spin').values())
+        node_sizes = list(nx.get_node_attributes(graph, 'field').values())
         edge_colors = list(nx.get_edge_attributes(graph, 'coupling').values())
-        pos = nx.nx_pydot.graphviz_layout(graph) if pos is not None else pos
-        node_size = 300 * np.sqrt(25 / graph.number_of_nodes())
-        nx.drawing.draw(graph, pos, node_color = node_colors, edge_color = edge_colors, with_labels = with_labels,
-                        node_size = node_size, vmax = 1.0, vmin = -1.0, cmap = 'coolwarm')
+        pos = nx.nx_pydot.graphviz_layout(graph) if pos is None else pos
+        node_size = 800 * np.sqrt(25 / graph.number_of_nodes())
+
+        # color axis
+        cmap = plt.get_cmap('PiYG')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size = '2%', pad = '2%')
+        mpl.colorbar.ColorbarBase(cax, cmap = cmap,
+                                  norm = mpl.colors.Normalize(-1, 1),
+                                  ticks = [-1, +1])
+
+        node_labels = {n: n for n in graph.nodes() if not n.isdigit()}
+
+        nx.drawing.draw(graph, pos, ax = ax, node_color = node_colors, edge_color = edge_colors,
+                        node_size = node_size, vmax = 1.0, vmin = -1.0, width = 4,
+                        cmap = cmap, edge_cmap = cmap, labels = node_labels, font_size = 14, font_color = "white")
 
     def get_energy_at_site(self, node):
         """
@@ -114,20 +134,21 @@ class IsingGraph:
         if video:
             num_frames = 100
             FFMpegWriter = anim.writers['ffmpeg']
-            writer = FFMpegWriter(fps = 10)
+            # writer = FFMpegWriter(fps = 10)
 
-            # plt.ion()
-            fig = plt.figure()
+            pos = nx.nx_pydot.graphviz_layout(self.graph)
 
-            with writer.saving(fig, "ising.mp4", 100):
-                pos = nx.nx_pydot.graphviz_layout(self.graph)
-                for epoch in iterator:
-                    self.temperature = temperatures[epoch]
-                    self.metropolis_step()
-                    if epoch % (epochs // num_frames) == 0:
-                        IsingGraph.visualize_graph(self.graph, pos = pos)
-                        writer.grab_frame()
-                        plt.clf()
+            # with writer.saving(fig, "ising.mp4", 100):
+            for epoch in iterator:
+                self.temperature = temperatures[epoch]
+                self.metropolis_step()
+                if epoch % (epochs // num_frames) == 0:
+                    IsingGraph.visualize_graph(self.graph, pos = pos)
+                    title = str(epoch).zfill(5)
+                    plt.savefig(f"frames/{title}.png", dpi = 144)
+                    plt.close()
+                        # writer.grab_frame()
+                        # plt.clf()
 
             plt.close('all')
 
