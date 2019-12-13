@@ -4,19 +4,19 @@ from json import loads
 import numpy as np
 from tqdm import tqdm
 
-from ising_compiler.alu_nx import IsingCircuitModules
-from ising_compiler.gates_nx import IsingCircuitGraph
+from ising_compiler.alu_nx import IsingALU
+from ising_compiler.gates_nx import IsingCircuit
 
 
 class GateTests(unittest.TestCase):
 
     def test_gates(self):
-        gates = [IsingCircuitGraph.AND,
-                 IsingCircuitGraph.NAND,
-                 IsingCircuitGraph.OR,
-                 IsingCircuitGraph.NOR,
-                 IsingCircuitGraph.XOR,
-                 IsingCircuitGraph.XNOR]
+        gates = [IsingCircuit.AND,
+                 IsingCircuit.NAND,
+                 IsingCircuit.OR,
+                 IsingCircuit.NOR,
+                 IsingCircuit.XOR,
+                 IsingCircuit.XNOR]
         tests = [lambda a, b: a & b,
                  lambda a, b: not (a & b),
                  lambda a, b: a | b,
@@ -29,7 +29,7 @@ class GateTests(unittest.TestCase):
 
     def _test_gate_2in_1out(self, gate_fn, test_fn):
 
-        circuit = IsingCircuitGraph()
+        circuit = IsingCircuit()
         a = circuit.INPUT("A")
         b = circuit.INPUT("B")
         c = gate_fn(circuit, a, b, "C")
@@ -48,7 +48,7 @@ class GateTests(unittest.TestCase):
             self.assertEqual(c_exp, c_ideal)
 
     def test_half_adder(self):
-        circuit = IsingCircuitModules()
+        circuit = IsingALU()
         A = circuit.INPUT("A")
         B = circuit.INPUT("B")
         S, C = circuit.HALF_ADDER(A, B, "S", "C")
@@ -77,7 +77,7 @@ class GateTests(unittest.TestCase):
         self._test_full_adder_circuits(use_nand_adder = True)
 
     def _test_full_adder_circuits(self, use_nand_adder = False):
-        circuit = IsingCircuitModules()
+        circuit = IsingALU()
         A = circuit.INPUT("A")
         B = circuit.INPUT("B")
         Cin = circuit.INPUT("Cin")
@@ -123,7 +123,7 @@ class GateTests(unittest.TestCase):
             self.assertGreaterEqual(correct_rate, ACCURACCY_THRESHOLD, msg = "Accuraccy threshold not met")
 
     def test_ripple_carry_adder(self, num_bits = 4, num_trials = 3):
-        circuit = IsingCircuitModules()
+        circuit = IsingALU()
         S_bits, Cout = circuit.RIPPLE_CARRY_ADDER(num_bits)
 
         for _ in range(num_trials):

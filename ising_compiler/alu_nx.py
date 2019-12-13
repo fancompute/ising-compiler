@@ -1,7 +1,7 @@
-from ising_compiler.gates_nx import IsingCircuitGraph
+from ising_compiler.gates_nx import IsingCircuit
 
 
-class IsingCircuitModules(IsingCircuitGraph):
+class IsingALU(IsingCircuit):
 
     def HALF_ADDER(self, A, B, S = None, C = None):
         S_bit = self.XOR(A, B, out = S)

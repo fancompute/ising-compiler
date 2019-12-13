@@ -8,7 +8,7 @@ from ising_compiler.ising_nx import IsingGraph
 from ising_compiler.utils import *
 
 
-class IsingCircuitGraph(IsingGraph):
+class IsingCircuit(IsingGraph):
     wire_coupling = -1
     input_field_strength = 5
 
@@ -18,10 +18,11 @@ class IsingCircuitGraph(IsingGraph):
     and all outputs are not. (e.g. NAND(A,B,C) will take inputs A' and B' and return spin C)
     '''
 
-    def __init__(self, temperature = 0.5, initializer = 'random'):
+    def __init__(self, temperature = 0.5, initializer = 'random', copy_mode = "auto"):
         super().__init__(nx.Graph(), temperature = temperature, initializer = initializer)
         self.inputs = []
         self.outputs = []
+        self.copy_mode = copy_mode # "auto": copies are |V|, "primed": A -> A', "numeric": A -> A1 -> A2
 
     def get_spin(self, node, mode = 'spin'):
         if mode == 'spin':
@@ -52,12 +53,20 @@ class IsingCircuitGraph(IsingGraph):
         input_copies = []
         for node in nodes:
             assert self.graph.has_node(node), f"Input node {node} missing in graph {self.graph}"
-            i = 1
-            while self.graph.has_node(node + str(i)): i += 1
-            # node_copy = self.add_spin(node + str(i))
-            node_copy = self.add_spin()
+            if self.copy_mode == "auto":
+                node_copy = self.add_spin()
+            elif self.copy_mode == "numeric":
+                i = 1
+                while self.graph.has_node(node + str(i)): i += 1
+                node_copy = self.add_spin(node + str(i))
+            elif self.copy_mode == "primed":
+                i = 1
+                while self.graph.has_node(node + "'"*i): i += 1
+                node_copy = self.add_spin(node + "'"*i)
+            else:
+                raise ValueError(f"Invalid copy mode: {self.copy_mode}")
             input_copies.append(node_copy)
-            self.WIRE(node, node_copy)
+            self.COPY(node, node_copy)
         return input_copies
 
     def add_spins_not_present(self, *nodes):
@@ -96,18 +105,24 @@ class IsingCircuitGraph(IsingGraph):
             else:
                 raise ValueError()
 
-    def INPUT(self, name):
+    def INPUT(self, name, add_node=True):
         '''Designate a spin to be an input to the circuit. Returns a wired *copy* of the spin node'''
-        self.add_spin(name)
+        if add_node:
+            self.add_spin(name)
+        else:
+            assert self.graph.has_node(name), f"add_node is False and input node {name} missing in graph {self.graph}"
         self.inputs.append(name)
         return name
 
-    def OUTPUT(self, name):
-        assert self.graph.has_node(name), f"Output node {name} missing in graph {self.graph}"
+    def OUTPUT(self, name, add_node=False):
+        if add_node:
+            self.add_spin(name)
+        else:
+            assert self.graph.has_node(name), f"add_node is False and output node {name} missing in graph {self.graph}"
         self.outputs.append(name)
         return name
 
-    def WIRE(self, spin1, spin2):
+    def COPY(self, spin1, spin2):
         self.set_coupling(spin1, spin2, self.wire_coupling)
 
     def NOT(self, spin1, spin2):
@@ -116,7 +131,6 @@ class IsingCircuitGraph(IsingGraph):
     def AND(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
-        # H = -1/2 s1 + -1/2 s2 + s3 + 1/2 s1 s2 + -s1 s3 + -s2 s3
         self.set_field(s1, -1 / 2)
         self.set_field(s2, -1 / 2)
         self.set_field(s3, 1)
@@ -128,7 +142,6 @@ class IsingCircuitGraph(IsingGraph):
     def NAND(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
-        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
         self.set_field(s1, -1 / 2)
         self.set_field(s2, -1 / 2)
         self.set_field(s3, -1)
@@ -140,7 +153,6 @@ class IsingCircuitGraph(IsingGraph):
     def OR(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
-        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
         self.set_field(s1, 1 / 2)
         self.set_field(s2, 1 / 2)
         self.set_field(s3, -1)
@@ -148,21 +160,10 @@ class IsingCircuitGraph(IsingGraph):
         self.set_coupling(s1, s3, -1)
         self.set_coupling(s2, s3, -1)
         return s3
-        # s1, s2 = self.copy_inputs(in1, in2)
-        # s3 = self.add_spin(out)
-        # # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
-        # self.set_field(s1, -1 / 2)
-        # self.set_field(s2, -1 / 2)
-        # self.set_field(s3, -1)
-        # self.set_coupling(s1, s2, -1 / 2)
-        # self.set_coupling(s1, s3, -1)
-        # self.set_coupling(s2, s3, -1)
-        # return s3
 
     def NOR(self, in1, in2, out = None):
         s1, s2 = self.copy_inputs(in1, in2)
         s3 = self.add_spin(out)
-        # H = -1/2 s1 + -1/2 s2 + -s3 + 1/2 s1 s2 + s1 s3 + s2 s3
         self.set_field(s1, 1 / 2)
         self.set_field(s2, 1 / 2)
         self.set_field(s3, 1)
@@ -171,11 +172,10 @@ class IsingCircuitGraph(IsingGraph):
         self.set_coupling(s2, s3, 1)
         return s3
 
-    def XOR(self, in1, in2, out = None):
+    def XOR(self, in1, in2, out = None, anc = None):
         s1, s2 = self.copy_inputs(in1, in2)
         so = self.add_spin(out)
-        sA = self.add_spin()
-        # H = 1/2 s1 + 1/2 s2 + 1 sA + 1/2 so + 1/2 s1 s2 + s1 sA + s2 sA + 1/2 s1 so + 1/2 s2 so + sA so
+        sA = self.add_spin(anc)
         self.set_field(s1, 1 / 2)
         self.set_field(s2, 1 / 2)
         self.set_field(sA, 1)
@@ -189,11 +189,10 @@ class IsingCircuitGraph(IsingGraph):
 
         return so
 
-    def XNOR(self, in1, in2, out = None):
+    def XNOR(self, in1, in2, out = None, anc = None):
         s1, s2 = self.copy_inputs(in1, in2)
         so = self.add_spin(out)
-        sA = self.add_spin()
-        # H = 1/2 s1 + 1/2 s2 + 1 sA + 1/2 so + 1/2 s1 s2 + s1 sA + s2 sA + 1/2 s1 so + 1/2 s2 so + sA so
+        sA = self.add_spin(anc)
         self.set_field(s1, 1 / 2)
         self.set_field(s2, 1 / 2)
         self.set_field(sA, 1)

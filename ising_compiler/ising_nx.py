@@ -75,23 +75,17 @@ class IsingGraph:
         node_fields = list(nx.get_node_attributes(graph, 'field').values())
         field_sizes = node_size * (1 + 2 * np.sqrt(np.abs(node_fields)))
 
-        print(node_fields)
-
         # color axis
         cmap = plt.get_cmap('PiYG')
         cmap_fields = plt.get_cmap('bwr')
 
         divider = make_axes_locatable(ax)
         cax1 = divider.append_axes('right', size = '2%', pad = '2%')
-        mpl.colorbar.ColorbarBase(cax1, cmap = cmap,
-                                  norm = mpl.colors.Normalize(-1, 1),
-                                  ticks = [-1, +1])
+        mpl.colorbar.ColorbarBase(cax1, cmap = cmap, norm = mpl.colors.Normalize(-1, 1), ticks = [-1, +1])
         cax1.set_ylabel('Spin', rotation = 270, labelpad = -5, fontsize = 14)
 
-        cax2 = divider.append_axes('left', size = '2%', pad = '2%')
-        mpl.colorbar.ColorbarBase(cax2, cmap = cmap_fields,
-                                  norm = mpl.colors.Normalize(-1, 1),
-                                  ticks = [-1, +1])
+        cax2 = divider.append_axes('right', size = '2%', pad = '4%')
+        mpl.colorbar.ColorbarBase(cax2, cmap = cmap_fields, norm = mpl.colors.Normalize(-1, 1), ticks = [-1, +1])
         cax2.set_ylabel('Field strength, coupling', rotation = 270, labelpad = -5, fontsize = 14)
 
         node_labels = {n: n for n in graph.nodes() if not n.isdigit()}
