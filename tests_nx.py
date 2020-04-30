@@ -99,8 +99,8 @@ class GateTests(unittest.TestCase):
             print("Testing with inputs {}".format(input_dict))
             outcomes = circuit.evaluate_outcomes(input_dict,
                                                  runs = 20,
-                                                 epochs_per_run = 200000,
-                                                 anneal_temperature_range = [1, 1e-4],
+                                                 epochs_per_run = 100000,
+                                                 anneal_temperature_range = [1, 1e-3],
                                                  show_progress = True)
 
             most_common = outcomes.most_common()[0]
@@ -118,7 +118,7 @@ class GateTests(unittest.TestCase):
 
             print("Accuraccy rate: {:.2f}".format(correct_rate))
 
-            ACCURACCY_THRESHOLD = 0.75
+            ACCURACCY_THRESHOLD = 0.6
 
             self.assertGreaterEqual(correct_rate, ACCURACCY_THRESHOLD, msg = "Accuraccy threshold not met")
 
