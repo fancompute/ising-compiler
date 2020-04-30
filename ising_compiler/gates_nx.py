@@ -22,7 +22,7 @@ class IsingCircuit(IsingGraph):
         super().__init__(nx.Graph(), temperature = temperature, initializer = initializer)
         self.inputs = []
         self.outputs = []
-        self.copy_mode = copy_mode # "auto": copies are |V|, "primed": A -> A', "numeric": A -> A1 -> A2
+        self.copy_mode = copy_mode  # "auto": copies are |V|, "primed": A -> A', "numeric": A -> A1 -> A2
 
     def get_spin(self, node, mode = 'spin'):
         if mode == 'spin':
@@ -61,8 +61,8 @@ class IsingCircuit(IsingGraph):
                 node_copy = self.add_spin(node + str(i))
             elif self.copy_mode == "primed":
                 i = 1
-                while self.graph.has_node(node + "'"*i): i += 1
-                node_copy = self.add_spin(node + "'"*i)
+                while self.graph.has_node(node + "'" * i): i += 1
+                node_copy = self.add_spin(node + "'" * i)
             else:
                 raise ValueError(f"Invalid copy mode: {self.copy_mode}")
             input_copies.append(node_copy)
@@ -105,7 +105,7 @@ class IsingCircuit(IsingGraph):
             else:
                 raise ValueError()
 
-    def INPUT(self, name, add_node=True):
+    def INPUT(self, name, add_node = True):
         '''Designate a spin to be an input to the circuit. Returns a wired *copy* of the spin node'''
         if add_node:
             self.add_spin(name)
@@ -114,7 +114,7 @@ class IsingCircuit(IsingGraph):
         self.inputs.append(name)
         return name
 
-    def OUTPUT(self, name, add_node=False):
+    def OUTPUT(self, name, add_node = False):
         if add_node:
             self.add_spin(name)
         else:
@@ -247,6 +247,47 @@ class IsingCircuit(IsingGraph):
         for key in output_dicts[0].keys():
             mean_dict[key] = sum(d[key] for d in output_dicts) / len(output_dicts)
         return mean_dict
+
+    def evaluate_expectation_evolution(self, input_dict,
+                                       runs = 1000,
+                                       epochs_per_run = 1000,
+                                       epoch_step = 10,
+                                       anneal_temperature_range = None,
+                                       show_progress = True):
+        '''Evaluates the evolution of the expectation of output spins over many runs'''
+        spin_dicts_each_run = [] # will be a list of [run1[t1[], t2[], t3[], run2[...], ...]
+        iterator_runs = tqdm(range(runs)) if show_progress else range(runs)
+        for _ in iterator_runs:
+            spin_dicts_each_time = []
+            IsingGraph.initialize_spins(self.graph)
+
+            if anneal_temperature_range:
+                temperatures = np.geomspace(anneal_temperature_range[0], anneal_temperature_range[1], epochs_per_run)
+            else:
+                temperatures = [self.temperature] * epochs_per_run
+
+            self.set_input_fields(input_dict, mode = 'binary')
+            for epoch_batch in range(0, epochs_per_run, epoch_step):
+                for epoch in range(epoch_step):
+                    self.temperature = temperatures[epoch_batch + epoch]
+                    self.metropolis_step()
+                # build a return dictionary of output spins
+                spin_dict = {}
+                for node in self.graph.nodes:
+                    spin_dict[node] = self.graph.nodes[node]['spin']
+                spin_dicts_each_time.append(spin_dict)
+            spin_dicts_each_run.append(spin_dicts_each_time)
+
+        # This is a little sloppy
+        mean_dict_each_time = {}
+        for key in spin_dicts_each_run[0][0].keys():
+            mean_dict_each_time[key] = [] # set each key value to an empty list to be populated for each time
+        for t, _ in enumerate(spin_dicts_each_run[0]):
+            for key in spin_dicts_each_run[0][0].keys():
+                avg_this_timestep = sum(run[t][key] for run in spin_dicts_each_run) / len(spin_dicts_each_run)
+                mean_dict_each_time[key].append(avg_this_timestep)
+
+        return mean_dict_each_time
 
     def evaluate_outcomes(self, input_dict,
                           runs = 1000,
