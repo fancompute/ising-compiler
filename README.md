@@ -1,4 +1,4 @@
-# ising-compiler
+# ising-compiler [![Build Status](https://travis-ci.com/fancompute/ising-compiler.svg?branch=master)](https://travis-ci.com/fancompute/ising-compiler)
 
 🍰 Compiling your code to an Ising Hamiltonian so you don't have to!
 
